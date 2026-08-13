@@ -1,7 +1,8 @@
 """Gardening advice based on the season and the type of plant.
 
-Gives a gardener two pieces of guidance: what the current season
-demands, and what their particular plant needs.
+Asks the gardener which season it is and what they are growing, then
+gives advice for both, along with a few plants worth putting in this
+time of year.
 """
 
 # Advice is held in dictionaries rather than if/elif chains.
@@ -23,6 +24,14 @@ PLANT_ADVICE = {
     "vegetable": "Keep an eye out for pests!",
     "herb": "Pinch out the tips to keep the plant bushy.",
     "shrub": "Prune after flowering to keep a tidy shape.",
+}
+
+# Plants worth sowing or planting in each season.
+SEASONAL_PLANTS = {
+    "summer": ["courgettes", "sunflowers", "basil"],
+    "winter": ["garlic", "broad beans", "winter pansies"],
+    "spring": ["tomatoes", "sweet peas", "lettuce"],
+    "autumn": ["spring bulbs", "onion sets", "kale"],
 }
 
 DEFAULT_SEASON_ADVICE = "No advice for this season."
@@ -50,27 +59,72 @@ def get_plant_advice(plant_type):
                             DEFAULT_PLANT_ADVICE)
 
 
+def get_plant_suggestions(season):
+    """Return a list of plants suited to the given season.
+
+    Returns an empty list for an unknown season, so the caller can
+    simply skip the suggestion rather than printing a blank heading.
+    """
+    return SEASONAL_PLANTS.get(season.lower().strip(), [])
+
+
 def generate_advice(season, plant_type):
     """Return the combined advice for a season and a plant type.
 
     Kept separate from printing so the advice can be tested, reused or
     displayed some other way without changing this function.
     """
-    return (
-        f"{get_season_advice(season)}\n"
-        f"{get_plant_advice(plant_type)}"
-    )
+    lines = [
+        get_season_advice(season),
+        get_plant_advice(plant_type),
+    ]
+
+    suggestions = get_plant_suggestions(season)
+    if suggestions:
+        lines.append(
+            f"\nWorth planting now: {', '.join(suggestions)}."
+        )
+
+    return "\n".join(lines)
+
+
+def ask_for_choice(prompt, valid_options):
+    """Ask the user to pick one of valid_options, repeating on error.
+
+    Input is validated here rather than trusted, because a typo would
+    otherwise fall through to the default message and leave the
+    gardener wondering why they got no advice. Showing the accepted
+    values in the prompt means they never have to guess.
+    """
+    options_text = ", ".join(sorted(valid_options))
+
+    while True:
+        answer = input(f"{prompt} ({options_text}): ").strip().lower()
+
+        if answer in valid_options:
+            return answer
+
+        if not answer:
+            print("Please type something.")
+        else:
+            print(f"'{answer}' is not one of the options. "
+                  f"Please choose from: {options_text}.")
 
 
 def main():
-    """Print advice for the configured season and plant type."""
-    season = "summer"
-    plant_type = "flower"
+    """Ask the user for a season and plant type, then print advice."""
+    print("Garden Advice\n" + "-" * 40)
 
+    season = ask_for_choice("Which season is it", SEASON_ADVICE.keys())
+    plant_type = ask_for_choice("What are you growing",
+                                PLANT_ADVICE.keys())
+
+    print("\n" + "-" * 40)
     print(generate_advice(season, plant_type))
+    print("-" * 40)
 
 
 # Only runs when the file is executed directly, so the functions above
-# can be imported by tests or other modules without printing anything.
+# can be imported by tests or other modules without prompting anyone.
 if __name__ == "__main__":
     main()
